@@ -18,8 +18,9 @@ def import_folder(path):
       full_path = path + '/' + image # we are creating the path for every image inside the directory with the info that we got from walk
       image_surf = pygame.image.load(full_path).convert_alpha()
       surface_list.append(image_surf)
-
+ 
   return surface_list
+
 
 #in the map made in tile the obstacules are represented as '395' the '-1' will be empty space
 #we don't have to initialize pygame with pygame.init() here cause it has already been initiated in the main file

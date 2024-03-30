@@ -1,5 +1,6 @@
 import pygame
 from settings import *
+from support import import_folder
 
 class Player(pygame.sprite.Sprite):
   def __init__(self,pos,groups,obstacle_sprites):#between brackets we have the necessary parameters to initiated the class child Player#When a Player instance is created in level.py, it is added to the visible_sprites group but also given a reference to the obstacle_sprites group for collision detection purposes.
@@ -8,29 +9,84 @@ class Player(pygame.sprite.Sprite):
     self.rect = self.image.get_rect(topleft = pos) # self.image.get_rect() is method  that  allows us to use properties like .x and get .y to get the coordinates easier and  other useful methods, topleft= pos helps us  to draw the image in the right left corner of his size, the coordenates given for that be given in the pos argument
     self.hitbox = self.rect.inflate(0, -26)##hit box is the size of a sprite(image)to collision,  in this case we need to oerlap a little the player image over the obstacules then we need to created and smaller hixbox area, We can do it by .inflate#inflate (x, y) takes a rectangule and changes the size
 
+    # graphics setup
+    self.import_player_assets()
+    self.status = 'down'
+
+    # movement
     self.direction = pygame.math.Vector2()# self.direction = pygame.math.Vector2() creates a Vector2 object representing a 2D direction, often used in games for movement, aiming, orientation, and other vector-related tasks.When you call pygame.math.Vector2(), it creates a new Vector2 object with its components initialized to 0.0. So, self.direction is now a vector with both x and y components set to 0.0.
     self.speed = 5
+    self.attacking = False
+    self.attack_cooldown = 400
+    self.attack_time = None
 
+    
     self.obstacle_sprites = obstacle_sprites
+
+  def import_player_assets(self): #with this function we are going to import all the images concerning to player's attacks 
+    character_path = '/home/Orlando517/Documentos/lumetrio/python/rpg-game/graphics/player/'
+    self.animations = {'up': [], 'down': [],'left': [], 'right': [],
+      'right_idle':[], 'left_idle':[], 'up_idle':[],'down_idle':[],
+      'right_attack':[],'left_attack':[],'up_attack':[],'down_attack':[]}
+    
+    for animation in self.animations.keys():# for every item in the dictionary animations 
+      full_path = character_path + animation
+      self.animations[animation] = import_folder(full_path) #here we are adding the value to thekeyword in the dictionary animations also the value that we are goint to add it the importing function to make the folder's path from settings
 
   def input(self):
     keys = pygame.key.get_pressed()#pygame.key.get_pressed() returns a list-like object where each index corresponds to a key on the keyboard.Each index holds a value of 1 (True) if the key is pressed and 0 (False) if the key is not pressed.
 
+    # movement input
     if keys[pygame.K_UP]: #If keys[pygame.K_UP] is True (which means the "up arrow" key is pressed), the following block of code will execute.
       self.direction.y = -1
+      self.status = 'up'  #every time that we press the key K_UP or the corresponding will be changed the self.status
     elif keys[pygame.K_DOWN]:
       self.direction.y = 1
+      self.status = 'down'
     else:
       self.direction.y = 0
 
     if keys[pygame.K_RIGHT]: #If keys[pygame.K_UP] is True (which means the "up arrow" key is pressed), the following block of code will execute.
       self.direction.x = 1
+      self.status = 'right'
     elif keys[pygame.K_LEFT]:
       self.direction.x = -1
+      self.status = 'left'
     else:
       self.direction.x = 0
 
-  def move(self,speed):#we  don't use self.speed becausewe  are going to make subsequentently another class in which the player and enemies can inherit methods  an attributes 
+    # attack input
+    if keys[pygame.K_SPACE] and not self.attacking:#not self.attacking: This part checks if self.attacking is False. The not keyword negates the value of self.attacking. So, if self.attacking is False, not self.attacking is True.
+      self.attacking = True
+      self.attack_time = pygame.time.get_ticks() # with this line we get the time when the action is taking place, this line will be running only once 
+      print('attack')
+
+    #magic input
+    if keys[pygame.K_LCTRL]and not self.attacking:
+      self.attacking = True
+      self.attack_time = pygame.time.get_ticks() # with this line we get the time when the action is taking place, this line will be running only once 
+      print('magic')
+
+  def get_status(self):
+
+    # idle status
+    if self.direction.x == 0 and self.direction.y == 0: 
+      if not 'idle' in self.status and not 'attack' in self.status: # we are checking if the status already has the word idle in it, if not we are going to add it 
+        self.status = self.status + '_idle'# if the condition is true then we will add _iddle to the current status
+    
+    if self.attacking:
+      self.direction.x = 0
+      self.direction.y = 0
+      if not 'attack' in self.status: # we are checking if the status already has the word idle in it, if not we are going to add it 
+        if 'idle' in self.status:#if idle is in self.status then we're going to overwrite it
+          self.status = self.status.replace('_idle','_attack')#in this line we replace the word _idle in status for _attack
+        else:
+          self.status = self.status + '_attack'# if the condition is true then we will add _iddle to the current status     
+    else:
+      if 'attack' in self.status:#when is false we sure that the attack status doesn't continue by changining with an empty string ''
+        self.status = self.status.replace( '_attack','')
+
+  def move(self,speed):#we don't use self.speed becausewe  are going to make subsequentently another class in which the player and enemies can inherit methods  an attributes 
     if self.direction.magnitude() != 0:
       self.direction = self.direction.normalize()#A unit vector is a vector that has a magnitude (length) of 1 but retains the same direction as the original vector.When you normalize a vector, you are essentially "scaling" it down to a length of 1 while keeping its direction intact.#The self.direction = self.direction.normalize() line normalizes the self.direction vector.#This step ensures that the sprite moves at a consistent speed in any direction, without any bias towards diagonals or cardinals
 
@@ -59,8 +115,16 @@ class Player(pygame.sprite.Sprite):
           if self.direction.y < 0: #moving up
             self.hitbox.top = sprite.hitbox.bottom #
 
+  def cooldowns(self):
+    current_time = pygame.time.get_ticks() #this line is used to calculate the time and also help us to count the time of the actions that we make,this line will be running infinitely
 
+    if self.attacking:
+      if current_time -self.attack_time >= self.attack_cooldown:
+        self.attacking = False # with this  we control the time of our attack
+  
   def update(self):#The update method in the Player class serves as a central hub for updating the player's state based on user input.By separating input handling into its own method and calling it within update, the code remains organized, modular, and follows standard game development practices.
+    self.cooldowns()
+    self.get_status()
     self.input()
     self.move(self.speed)
 

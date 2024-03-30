@@ -27,15 +27,17 @@ class Level:
     }
     graphics = {
       'grass': import_folder('/home/Orlando517/Documentos/lumetrio/python/rpg-game/graphics/Grass'),# in this case we are using the function that we created in support to get all the paths of the images that we need
-      'objects': import_folder('/home/Orlando517/Documentos/lumetrio/python/rpg-game/graphics/objects'),
+      'objects': import_folder('/home/Orlando517/Documentos/lumetrio/python/rpg-game/graphics/Objects')
     }
 
     for style,layout in layouts.items():#style is going to be boundary right now and layout will be the import_csv_layout 
       for row_index,row in enumerate(layout):#The enumerate() function is a built-in Python function that takes an iterable (such as a list, tuple, or string) as input and returns an iterator that yields pairs of (index, value)##also  you can use the for loop with multiple variables by unpacking tuples or other iterable objects##
         for col_index, col in enumerate(row):
           if col != '-1':
+            #Create the base floor and layouts
             x = col_index * TILESIZE
             y = row_index * TILESIZE
+
             if style == 'boundary':#we establish the file that we want to show by the key word boundary from the dictionary layouts
               Tile((x,y),[self.obstacle_sprites],'invisible')# we removed the self.visible_sprites from this because we dont want to see the tiles draw
             if style == 'grass':
@@ -46,18 +48,13 @@ class Level:
             if style == 'object':
               surf = graphics['objects'][int(col)]#here we are getting the surface in this way cause every image that will work as a surface it is different, with choosing it  from the list inside the dictionary
               Tile((x,y),[self.visible_sprites,self.obstacle_sprites],'object',surf)# here we choose the grass images to be the surfaces to be draw
-              print(f"Placing object with ID {int(col)} at position ({x}, {y})")
-              # create an object tile
-    #     if col == 'x':
-    #       Tile((x,y),[self.visible_sprites,self.obstacle_sprites])#we are calling the class Tile from the file tile.py and we assigned the parameters in brackets
-    #     if col == 'p':
-    #       self.player = Player((x,y),[self.visible_sprites],self.obstacle_sprites)#When you have multiple sprite groups to pass, you need to enclose them in brackets to create a list.For example, if you have another sprite group self.other_sprites, you would pass both self.visible_sprites and self.other_sprites like this:Player((x, y), [self.visible_sprites, self.other_sprites])
     self.player = Player((2000,1430),[self.visible_sprites],self.obstacle_sprites)
 
   def run(self):
     # update and draw the game
     self.visible_sprites.custom_draw(self.player)# we replaced teh draw method with the one we did
     self.visible_sprites.update()
+    debug(self.player.status)
     
 
 class YSortCameraGroup(pygame.sprite.Group):#in the YSortCameraGroup what we are doing is to override the pygame.sprite.Group function that comes build-in in python for the self.visible_sprites attribute
@@ -93,3 +90,8 @@ class YSortCameraGroup(pygame.sprite.Group):#in the YSortCameraGroup what we are
 #self.visible_sprites.draw(self.display_surface)#The draw() method is a built-in method provided by pygame.sprite.Group. #When you call self.visible_sprites.draw(surface), you are telling Pygame to draw all the sprites in self.visible_sprites onto the specified surface
 #in the run method ---->debug(self.player.direction)# we are usign the method debug fromt the file debug to see the  changes  in the direction attribute from the class player  
 #always the sprites add it to pygame.sprite.Group() will be drawn in order, which means that it's going to draw the latest image added on the top of the others  
+    # create an object tile
+    #     if col == 'x':
+    #       Tile((x,y),[self.visible_sprites,self.obstacle_sprites])#we are calling the class Tile from the file tile.py and we assigned the parameters in brackets
+    #     if col == 'p':
+    #       self.player = Player((x,y),[self.visible_sprites],self.obstacle_sprites)#When you have multiple sprite groups to pass, you need to enclose them in brackets to create a list.For example, if you have another sprite group self.other_sprites, you would pass both self.visible_sprites and self.other_sprites like this:Player((x, y), [self.visible_sprites, self.other_sprites])
