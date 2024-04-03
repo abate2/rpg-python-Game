@@ -5,6 +5,7 @@ from player import Player
 from debug import debug
 from support import *
 from random import choice # we need the choise method from random
+from weapon import Weapon
 
 class Level:
   def __init__(self):
@@ -48,7 +49,13 @@ class Level:
             if style == 'object':
               surf = graphics['objects'][int(col)]#here we are getting the surface in this way cause every image that will work as a surface it is different, with choosing it  from the list inside the dictionary
               Tile((x,y),[self.visible_sprites,self.obstacle_sprites],'object',surf)# here we choose the grass images to be the surfaces to be draw
-    self.player = Player((2000,1430),[self.visible_sprites],self.obstacle_sprites)
+    
+    self.player = Player((2000,1430),[self.visible_sprites],self.obstacle_sprites,self.create_attack)#functions as self.create_attack never have to be called with the parenthesis included whe are used as a parameters inside other function
+
+  def create_attack(self):
+    Weapon(self.player,[self.visible_sprites])#we call the funcion Weapon an we passed the parameters tha can be find out in this class
+  
+  def destroy_weapon(self):
 
   def run(self):
     # update and draw the game
