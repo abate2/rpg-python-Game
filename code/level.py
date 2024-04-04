@@ -17,6 +17,9 @@ class Level:
     self.visible_sprites = YSortCameraGroup() #Sprites can be added to these groups, and the groups can be updated and drawn on the display surface.
     self.obstacle_sprites = pygame.sprite.Group()
 
+    #atttack sprites
+    self.current_attack = None
+
     # sprite setup
     self.create_map()
 
@@ -50,12 +53,14 @@ class Level:
               surf = graphics['objects'][int(col)]#here we are getting the surface in this way cause every image that will work as a surface it is different, with choosing it  from the list inside the dictionary
               Tile((x,y),[self.visible_sprites,self.obstacle_sprites],'object',surf)# here we choose the grass images to be the surfaces to be draw
     
-    self.player = Player((2000,1430),[self.visible_sprites],self.obstacle_sprites,self.create_attack)#functions as self.create_attack never have to be called with the parenthesis included whe are used as a parameters inside other function
+    self.player = Player((2000,1430),[self.visible_sprites],self.obstacle_sprites,self.create_attack,self.destroy_attack)#functions as self.create_attack never have to be called with the parenthesis included whe are used as a parameters inside other function
 
   def create_attack(self):
-    Weapon(self.player,[self.visible_sprites])#we call the funcion Weapon an we passed the parameters tha can be find out in this class
+    self.current_attack = Weapon(self.player,[self.visible_sprites])#we call the funcion Weapon an we passed the parameters tha can be find out in this class
   
-  def destroy_weapon(self):
+  def destroy_attack(self):
+    if self.current_attack:
+      self.current_attack.kill()#removes the sprite from all the groups it belongs to.#Once a sprite is killed, it will no longer be updated or drawn in the game loop.It essentially removes the sprite from the game.
 
   def run(self):
     # update and draw the game

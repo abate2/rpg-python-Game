@@ -3,7 +3,7 @@ from settings import *
 from support import import_folder
 
 class Player(pygame.sprite.Sprite):
-  def __init__(self,pos,groups,obstacle_sprites,create_attack):#between brackets we have the necessary parameters to initiated the class child Player#When a Player instance is created in level.py, it is added to the visible_sprites group but also given a reference to the obstacle_sprites group for collision detection purposes.
+  def __init__(self,pos,groups,obstacle_sprites,create_attack,destroy_attack):#between brackets we have the necessary parameters to initiated the class child Player#When a Player instance is created in level.py, it is added to the visible_sprites group but also given a reference to the obstacle_sprites group for collision detection purposes.
     super().__init__(groups) #Is a good idea that the groups enter as a parameters in our parent class in that way are going to be processed by the parent class (pygame.sprite.Sprite), this is often necessary to properly initialize the inherited properties and behaviors, and  also adding the objects to the groups without need to added them with the method .add When you have a class that inherits from pygame.sprite.Sprite and you want instances of that class to belong to certain sprite groups, you can pass the groups argument to super().__init__(groups). This is a common and effective way to automatically add instances of the class to those groups upon creation.
     self.image = pygame.image.load('/home/Orlando517/Documentos/lumetrio/python/rpg-game/graphics/test/player.png').convert_alpha()
     self.rect = self.image.get_rect(topleft = pos) # self.image.get_rect() is method  that  allows us to use properties like .x and get .y to get the coordinates easier and  other useful methods, topleft= pos helps us  to draw the image in the right left corner of his size, the coordenates given for that be given in the pos argument
@@ -17,7 +17,6 @@ class Player(pygame.sprite.Sprite):
 
     # movement
     self.direction = pygame.math.Vector2()# self.direction = pygame.math.Vector2() creates a Vector2 object representing a 2D direction, often used in games for movement, aiming, orientation, and other vector-related tasks.When you call pygame.math.Vector2(), it creates a new Vector2 object with its components initialized to 0.0. So, self.direction is now a vector with both x and y components set to 0.0.
-    self.speed = 5
     self.attacking = False
     self.attack_cooldown = 400
     self.attack_time = None
@@ -25,9 +24,19 @@ class Player(pygame.sprite.Sprite):
 
     # weapon
     self.create_attack = create_attack #this  will be  the function that our class will receive when the level file is running
+    self.destroy_attack = destroy_attack
     self.weapon_index = 0 #later on we are going to use this number to select weapons
     self.weapon = list(weapon_data.keys())[self.weapon_index] # we are going to call only the keys in the weapon_data dictionary, to be able to use the index we convert the keys in a list
-    
+    self.can_switch_weapon = True
+    self.weapon_switch_time = None
+    self.switch_duration_cooldown = 200
+
+    # stats
+    self.stats = {'health': 100,'energy':60,'attack': 10,'magic': 4,'speed': 5} # these are going to be our base stats, this ones + the attack of the weapon will be the total damage
+    self.health = self.stats['health']
+    self.energy = self.stats['energy']
+    self.experience = 123
+    self.speed = self.stats['speed']
 
   def import_player_assets(self): #with this function we are going to import all the images concerning to player's attacks 
     character_path = '/home/Orlando517/Documentos/lumetrio/python/rpg-game/graphics/player/'
@@ -44,7 +53,7 @@ class Player(pygame.sprite.Sprite):
       keys = pygame.key.get_pressed()#pygame.key.get_pressed() returns a list-like object where each index corresponds to a key on the keyboard.Each index holds a value of 1 (True) if the key is pressed and 0 (False) if the key is not pressed.
 
       # movement input
-      if keys[pygame.K_UP]: #If keys[pygame.K_UP] is True (which means the "up arrow" key is pressed), the following block of code will execute.
+      if keys[pygame.K_UP]: #If keys[pygame.K_UP] is True (which means the "up arrow" key is pressed), the following block of code will execute.#Keys here is a list-like object returned by pygame.key.get_pressed(), where each index corresponds to a key on the keyboard. pygame.K_q represents the "q" key.
         self.direction.y = -1
         self.status = 'up'  #every time that we press the key K_UP or the corresponding will be changed the self.status
       elif keys[pygame.K_DOWN]:
@@ -65,14 +74,26 @@ class Player(pygame.sprite.Sprite):
       # attack input
       if keys[pygame.K_SPACE]:#and not self.attacking not self.attacking: This part checks if self.attacking is False. The not keyword negates the value of self.attacking. So, if self.attacking is False, not self.attacking is True. but  as we already madethat check at the beginning of the function then we can remove that partof the line
         self.attacking = True
-        self.attack_time = pygame.time.get_ticks() # with this line we get the time when the action is taking place, this line will be running only once 
+        self.attack_time = pygame.time.get_ticks() # with this line we get the time when the action is taking place, this line will be running only once #pygame.time.get_ticks() is a function that returns the number of milliseconds that have passed since the Pygame module was initialized.
         self.create_attack()
 
       #magic input
       if keys[pygame.K_LCTRL]:
         self.attacking = True
-        self.attack_time = pygame.time.get_ticks() # with this line we get the time when the action is taking place, this line will be running only once 
+        self.attack_time = pygame.time.get_ticks() 
         print('magic')
+
+      if keys[pygame.K_q] and self.can_switch_weapon:
+        self.can_switch_weapon = False
+        self.weapon_switch_time = pygame.time.get_ticks()
+
+        if self.weapon_index < len(list(weapon_data.keys())) - 1:
+          self.weapon_index += 1
+        else:
+          self.weapon_index = 0
+
+
+        self.weapon = list(weapon_data.keys())[self.weapon_index]#after increases the weapon index we need to update the index number that we call from the list
 
   def get_status(self):
 
@@ -126,8 +147,13 @@ class Player(pygame.sprite.Sprite):
     current_time = pygame.time.get_ticks() #this line is used to calculate the time and also help us to count the time of the actions that we make,this line will be running infinitely
 
     if self.attacking:
-      if current_time -self.attack_time >= self.attack_cooldown:
+      if current_time - self.attack_time >= self.attack_cooldown:# By subtracting self.attack_time from the current time current_time, we get the time difference since the last attack.
         self.attacking = False # with this  we control the time of our attack
+        self.destroy_attack()#we call the method that we got as a parameter from the Level Class to kill the attack (the weapon class)
+    
+    if not self.can_switch_weapon:
+      if current_time - self.weapon_switch_time >= self.switch_duration_cooldown:
+        self.can_switch_weapon = True
   
   def animate(self):
     animation = self.animations[self.status]# we are going to call the whole group of images that  are in the dictionary that match with the status
